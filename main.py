@@ -20,10 +20,16 @@ class RouteApp(App):
     }
     """
 
+    BINDINGS = [
+        ("u", "add_bar('red')", "Add Red")
+    ]
+
     def compose(self) -> ComposeResult:
         # Left: directory tree, Right: preview pane (currently empty placeholder)
         yield DirectoryTree("./library")
         yield Pretty("", id="preview")
+
+    def action_TODO
 
 
 if __name__ == "__main__":
