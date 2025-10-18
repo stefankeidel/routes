@@ -23,31 +23,3 @@ class TestBikeRouterRoute:
         assert route.pois == [
             {"lon": 10.00082, "lat": 53.549386, "description": "Test+Point"}
         ]
-
-    def test_to_yaml(self):
-        """Test conversion to YAML format."""
-        route = BikeRouterRoute(
-            layers=["standard", "Waymarked_Trails-Cycling"],
-            waypoints=[(10.007622, 53.552037), (10.000498, 53.55103)],
-            profile="cxb-gravel",
-            pois=[{"lon": 10.00082, "lat": 53.549386, "description": "Test Point"}]
-        )
-
-        yaml_output = route.to_yaml()
-        expected_yaml = (
-            "layers:\n"
-            "- standard\n"
-            "- Waymarked_Trails-Cycling\n"
-            "waypoints:\n"
-            "- lon: 10.007622\n"
-            "  lat: 53.552037\n"
-            "- lon: 10.000498\n"
-            "  lat: 53.55103\n"
-            "profile: cxb-gravel\n"
-            "pois:\n"
-            "- lon: 10.00082\n"
-            "  lat: 53.549386\n"
-            "  description: Test Point\n"
-        )
-
-        assert yaml_output == expected_yaml

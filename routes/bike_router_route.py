@@ -34,15 +34,25 @@ class BikeRouterRoute:
         }
         return yaml.dump(data, sort_keys=False)
 
-    def to_yaml_file(self, filepath: str) -> None:
-        """Write the YAML representation to a file."""
+    def to_json_file(self, filepath: str) -> None:
+        """Write the JSON representation to a file."""
+        import json
+
+        data = {
+            "layers": self.layers,
+            "waypoints": [{"lon": lon, "lat": lat} for lon, lat in self.waypoints],
+            "profile": self.profile,
+            "pois": self.pois,
+        }
         with open(filepath, "w") as f:
-            f.write(self.to_yaml())
+            json.dump(data, f, indent=4)
 
     @classmethod
     def from_url(cls, url: str) -> BikeRouterRoute:
         """
-        Create a BikeRouterRoute instance from a BikeRouter URL. Sorry for this mess, it was ChatGPT.
+        Create a BikeRouterRoute instance from a BikeRouter URL.
+        Sorry for this mess, it was ChatGPT, was too lazy.
+
         Unit tests say it does work tho :shrug:
         """
 
