@@ -38,6 +38,7 @@ class RouteApp(App):
         # Prepare the table columns
         table.clear(columns=True)
         table.add_column("Name")
+        table.add_column("Profile")
         table.add_column("Tags")
 
         # Instantiate RouteIndex pointing to the repository's library directory (relative to this file)
@@ -54,10 +55,11 @@ class RouteApp(App):
         # Populate the DataTable with route names and tags from the index
         for entry in index.all():
             name = glom(entry, "metadata.name")
+            profile = glom(entry, "spec.profile")
             tags = glom(entry, "metadata.tags", default=[])
             tags_text = ", ".join(tags) if tags else ""
 
-            table.add_row(name, tags_text)
+            table.add_row(name, profile, tags_text)
 
     # Selection handling for DataTable can be added here if needed.
 
