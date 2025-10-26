@@ -50,20 +50,7 @@ class RouteIndex:
                     self.errors.append(f"unexpected manifest type in {path}: {type(manifest)}")
                     continue
 
-                metadata = manifest.get("metadata", {}) or {}
-                route_id = metadata.get("name") or path.stem
-                name = metadata.get("name") or path.stem
-                tags = metadata.get("tags") or []
-
-                entry = {
-                    "id": route_id,
-                    "name": name,
-                    "tags": list(tags),
-                    "filepath": path,
-                    "raw": manifest,
-                }
-
-                self.routes.append(entry)
+                self.routes.append(manifest)
 
     def _load_file(self, path: Path) -> Any:
         # Read YAML manifest files from the library. We only support YAML files

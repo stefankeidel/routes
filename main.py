@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import ListView, ListItem, Label
+from glom import glom
 
 # Use the RouteIndex to load route manifests from the library directory
 from routes.route_index import RouteIndex
@@ -47,7 +48,7 @@ class RouteApp(App):
 
         # Populate the ListView with route names from the index
         for entry in index.all():
-            name = entry.get("name") or entry.get("id") or str(entry.get("filepath"))
+            name = glom(entry, "metadata.name")
             route_list.append(ListItem(Label(name)))
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
