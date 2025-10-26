@@ -24,28 +24,62 @@ class BikeRouterRoute:
         self.pois = pois
 
     def to_yaml(self) -> str:
-        """Convert the route to a YAML representation."""
+        """
+        Convert the route to a YAML representation.
 
-        data = {
+        The output looks almost like a Kubernetes manifest or Backstage catalog entry.
+        For example:
+
+        ```yaml
+        apiVersion: bikerouter.de/v1
+        kind: Route
+        metadata:
+            name: example-route
+            description: "An example bike router route"
+            tags:
+                - bike
+                - gravel
+        spec:
+            layers:
+                - standard
+                - Waymarked_Trails-Cycling
+                - gravel-overlay
+            waypoints:
+                - lon: 9.979776
+                  lat: 53.681992
+                - lon: 9.989163
+                  lat: 53.682005
+            profile: gravel
+            pois:
+                - lon: 10.012345
+                  lat: 53.690123
+                  description: "Nice cafe"
+        ```
+        """
+
+        # Build the manifest to match the example in the docstring.
+        # Metadata fields are optional on the class, so fall back to empty/defaults
+        metadata = {
+            "name": getattr(self, "name", ""),
+            "description": getattr(self, "description", ""),
+            "tags": getattr(self, "tags", []),
+        }
+
+        spec = {
             "layers": self.layers,
             "waypoints": [{"lon": lon, "lat": lat} for lon, lat in self.waypoints],
             "profile": self.profile,
             "pois": self.pois,
         }
-        return yaml.dump(data, sort_keys=False)
 
-    def to_json_file(self, filepath: str) -> None:
-        """Write the JSON representation to a file."""
-        import json
-
-        data = {
-            "layers": self.layers,
-            "waypoints": [{"lon": lon, "lat": lat} for lon, lat in self.waypoints],
-            "profile": self.profile,
-            "pois": self.pois,
+        manifest = {
+            "apiVersion": "bikerouter.de/v1",
+            "kind": "Route",
+            "metadata": metadata,
+            "spec": spec,
         }
-        with open(filepath, "w") as f:
-            json.dump(data, f, indent=4)
+
+        return yaml.dump(manifest, sort_keys=False)
 
     @classmethod
     def from_url(cls, url: str) -> BikeRouterRoute:
