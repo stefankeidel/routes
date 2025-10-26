@@ -2,6 +2,7 @@
 A Textual app.
 """
 
+import json
 from textual.app import App, ComposeResult
 from textual.widgets import DirectoryTree, Pretty
 
@@ -29,7 +30,14 @@ class RouteApp(App):
         yield DirectoryTree("./library")
         yield Pretty("", id="preview")
 
-    def action_TODO
+    def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
+        """Handle file selection to preview JSON content."""
+        try:
+            with open(event.path, 'r') as f:
+                content = json.load(f)
+            self.query_one("#preview", Pretty).update(content)
+        except Exception as e:
+            self.query_one("#preview", Pretty).update(f"Error loading file: {e}")
 
 
 if __name__ == "__main__":
