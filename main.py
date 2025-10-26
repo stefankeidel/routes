@@ -4,20 +4,13 @@ A Textual app.
 
 import json
 from textual.app import App, ComposeResult
-from textual.widgets import DirectoryTree, Pretty
+from textual.widgets import ListView, ListItem, Label
 
 
 class RouteApp(App):
     CSS = """
-    Screen {
-        layout: horizontal;
-    }
-    DirectoryTree {
-        width: 50%;
-        min-width: 30;
-    }
-    #preview {
-        width: 1fr;
+    ListView {
+        width: 100%;
     }
     """
 
@@ -26,18 +19,32 @@ class RouteApp(App):
     ]
 
     def compose(self) -> ComposeResult:
-        # Left: directory tree, Right: preview pane (currently empty placeholder)
-        yield DirectoryTree("./library")
-        yield Pretty("", id="preview")
+        # Route list
+        yield ListView()
 
-    def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
-        """Handle file selection to preview JSON content."""
-        try:
-            with open(event.path, 'r') as f:
-                content = json.load(f)
-            self.query_one("#preview", Pretty).update(content)
-        except Exception as e:
-            self.query_one("#preview", Pretty).update(f"Error loading file: {e}")
+    def on_mount(self) -> None:
+        """Load routes from index on mount."""
+        self._load_routes()
+
+    def _load_routes(self) -> None:
+        """Load routes from the library index."""
+        # TODO: Load from library/index.json when it exists
+        # For now, show dummy data
+        route_list = self.query_one(ListView)
+        dummy_routes = [
+            "Morning Commute Route",
+            "Weekend Gravel Adventure",
+            "City Park Loop",
+            "Coastal Scenic Ride",
+            "Mountain Trail Challenge"
+        ]
+        for route_name in dummy_routes:
+            route_list.append(ListItem(Label(route_name)))
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Handle route selection to preview route details."""
+        # TODO: Load and display the selected route
+        pass
 
 
 if __name__ == "__main__":
