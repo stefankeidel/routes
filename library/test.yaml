@@ -1,23 +1,23 @@
 apiVersion: bikerouter.de/v1
 kind: Route
 metadata:
-    name: example-route
-    description: "An example bike router route"
-    tags:
-        - bike
-        - gravel
+  name: example-route
+  description: An example bike router route
+  tags:
+  - gr
+  - hr
 spec:
-    layers:
-        - standard
-        - Waymarked_Trails-Cycling
-        - gravel-overlay
-    waypoints:
-        - lon: 9.979776
-          lat: 53.681992
-        - lon: 9.989163
-          lat: 53.682005
-    profile: gravel
-    pois:
-        - lon: 10.012345
-          lat: 53.690123
-          description: "Nice cafe"
+  layers:
+  - standard
+  - Waymarked_Trails-Cycling
+  - gravel-overlay
+  waypoints:
+  - lon: 9.979776
+    lat: 53.681992
+  - lon: 9.989163
+    lat: 53.682005
+  profile: gravel
+  pois:
+  - lon: 10.012345
+    lat: 53.690123
+    description: Nice cafe

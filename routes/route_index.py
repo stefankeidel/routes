@@ -53,6 +53,9 @@ class RouteIndex:
                     self.errors.append(f"unexpected manifest type in {path}: {type(manifest)}")
                     continue
 
+                # Keep a reference to the original file path on the manifest so
+                # callers (UI) can map an in-memory manifest back to its file.
+                manifest["__filepath"] = str(path)
                 self.routes[str(path)] = manifest
 
     def _load_file(self, path: Path) -> Any:
