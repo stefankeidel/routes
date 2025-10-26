@@ -3,8 +3,12 @@ A Textual app.
 """
 
 import json
+from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import ListView, ListItem, Label
+
+# Use the RouteIndex to load route manifests from the library directory
+from routes.route_index import RouteIndex
 
 
 class RouteApp(App):
@@ -28,18 +32,23 @@ class RouteApp(App):
 
     def _load_routes(self) -> None:
         """Load routes from the library index."""
-        # TODO: Load from library/index.json when it exists
-        # For now, show dummy data
         route_list = self.query_one(ListView)
-        dummy_routes = [
-            "Morning Commute Route",
-            "Weekend Gravel Adventure",
-            "City Park Loop",
-            "Coastal Scenic Ride",
-            "Mountain Trail Challenge"
-        ]
-        for route_name in dummy_routes:
-            route_list.append(ListItem(Label(route_name)))
+
+        # Instantiate RouteIndex pointing to the repository's library directory (relative to this file)
+        project_root = Path(__file__).resolve().parent
+        library_path = project_root / "library"
+        index = RouteIndex(library_path)
+
+        # If loading failed, show an error entry instead of dummy data
+        if index.errors:
+            for err in index.errors:
+                route_list.append(ListItem(Label(f"Error: {err}")))
+            return
+
+        # Populate the ListView with route names from the index
+        for entry in index.all():
+            name = entry.get("name") or entry.get("id") or str(entry.get("filepath"))
+            route_list.append(ListItem(Label(name)))
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle route selection to preview route details."""
