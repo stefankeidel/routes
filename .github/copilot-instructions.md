@@ -6,8 +6,7 @@ Bike routes are stored in JSON files in the `library/` directory. Each route rep
 
 An example link looks like [this](https://bikerouter.de/#map=14/53.5404/10.0176/standard,Waymarked_Trails-Cycling,gravel-overlay&lonlats=10.007622%2C53.552037%7C10.000498%2C53.55103%7C9.966831%2C53.554375&pois=10.00082%2C53.549386%2CTest+Point&profile=cxb-gravel).
 
-The output json file for this route encapsulates the parameters in a simple dictionary format.
-
+The output json file for this route encapsulates the parameters in a simple dictionary format and enriches with some metadata, like a name, description or a list of tags.
 
 ## Tech Stack in use
 
@@ -15,3 +14,11 @@ The output json file for this route encapsulates the parameters in a simple dict
 - Textual framework for building terminal applications
 - uv for package management
 
+## Workflow
+
+- As I open the app, I can see a list of existing routes in the library.
+- I can select a route to open in a browser, reconstructing the bikerouter.de link from the stored parameters.
+
+## Additional instructions
+
+- Keep changes as minimal and focused as possible.
