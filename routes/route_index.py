@@ -25,13 +25,16 @@ class RouteIndex:
 
     def __init__(self, library_path: Optional[Path | str] = None):
         self.library_path = Path(library_path or Path.cwd() / "library")
-        self.routes: List[Dict[str, Any]] = []
+        # routes is a mapping from the original file path (string) to the
+        # loaded manifest dict. Using the original path as the key makes it
+        # possible to edit or overwrite a specific file later on.
+        self.routes: Dict[str, Dict[str, Any]] = {}
         self.errors: List[str] = []
         self.reload()
 
     def reload(self) -> None:
         """Clear and (re)load manifests from the library directory."""
-        self.routes = []
+        self.routes = {}
         self.errors = []
 
         if not self.library_path.exists() or not self.library_path.is_dir():
@@ -50,7 +53,7 @@ class RouteIndex:
                     self.errors.append(f"unexpected manifest type in {path}: {type(manifest)}")
                     continue
 
-                self.routes.append(manifest)
+                self.routes[str(path)] = manifest
 
     def _load_file(self, path: Path) -> Any:
         # Read YAML manifest files from the library. We only support YAML files
@@ -59,25 +62,25 @@ class RouteIndex:
         return yaml.safe_load(text)
 
     def all(self) -> List[Dict[str, Any]]:
-        """Return all loaded route entries."""
-        return list(self.routes)
+        """Return all loaded route entries as a list of manifest dicts."""
+        return list(self.routes.values())
 
     def get_by_id(self, route_id: str) -> Optional[Dict[str, Any]]:
-        for r in self.routes:
+        for r in self.routes.values():
             if r.get("id") == route_id:
                 return r
         return None
 
     def filter_by_tag(self, tag: str) -> List[Dict[str, Any]]:
-        return [r for r in self.routes if tag in (r.get("tags") or [])]
+        return [r for r in self.routes.values() if tag in (r.get("tags") or [])]
 
     def filter_by_name_contains(self, substring: str) -> List[Dict[str, Any]]:
         s = substring.lower()
-        return [r for r in self.routes if s in (r.get("name", "").lower())]
+        return [r for r in self.routes.values() if s in (r.get("name", "").lower())]
 
     def search(self, tags: Optional[Iterable[str]] = None, name_contains: Optional[str] = None) -> List[Dict[str, Any]]:
         """Combined search helper. All provided filters are ANDed."""
-        results = self.routes
+        results = list(self.routes.values())
         if tags:
             tags_set = set(tags)
             results = [r for r in results if tags_set.issubset(set(r.get("tags") or []))]
