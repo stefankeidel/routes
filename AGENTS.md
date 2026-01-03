@@ -1,5 +1,12 @@
 This is a web application written using the Phoenix web framework.
 
+## Project purpose
+
+This application will help build a knowledge base of bike routes. Bike routes as
+such, are either links to routing websites like
+[www.bikerouter.de](www.bikerouter.de) or stored GPX files and are versioned.
+Multiple routes can be combined into a collection for, say, a multi day trip.
+
 ## Project guidelines
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
