@@ -18,6 +18,10 @@ defmodule RoutesWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/routes", RouteLive.Index
+    live "/routes/new", RouteLive.New
+    live "/routes/:id/edit", RouteLive.Edit
+    live "/routes/:id", RouteLive.Show
   end
 
   # Other scopes may use custom stacks.
