@@ -170,7 +170,10 @@ defmodule RoutesWeb.RouteLive.Show do
             </div>
 
             <div id="route-versions" phx-update="stream" class="mt-6 grid gap-4">
-              <div class="hidden rounded-2xl border border-dashed border-slate-200 px-6 py-10 text-sm text-slate-500 only:block">
+              <div
+                id="route-versions-empty"
+                class="hidden rounded-2xl border border-dashed border-slate-200 px-6 py-10 text-sm text-slate-500 only:block"
+              >
                 No versions yet. Publish your first version for this route.
               </div>
               <div
@@ -203,6 +206,7 @@ defmodule RoutesWeb.RouteLive.Show do
                           field={@edit_version_form[:status]}
                           type="select"
                           label="Status"
+                          id={"edit-version-status-#{route_version.id}"}
                           options={@status_options}
                           class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
                           error_class="border-rose-300 ring-2 ring-rose-100"
@@ -211,6 +215,7 @@ defmodule RoutesWeb.RouteLive.Show do
                           field={@edit_version_form[:notes]}
                           type="textarea"
                           label="Description"
+                          id={"edit-version-notes-#{route_version.id}"}
                           placeholder="What should riders know about this version?"
                           rows="3"
                           class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
