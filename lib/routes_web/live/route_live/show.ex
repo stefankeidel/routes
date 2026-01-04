@@ -4,6 +4,12 @@ defmodule RoutesWeb.RouteLive.Show do
   alias Routes.Routing
   alias Routes.Routing.RouteVersion
 
+  @status_options [
+    {"Draft", "draft"},
+    {"Published", "published"},
+    {"Archived", "archived"}
+  ]
+
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     route = Routing.get_route!(id)
@@ -17,6 +23,9 @@ defmodule RoutesWeb.RouteLive.Show do
      |> assign(:route, route)
      |> assign(:next_version_number, next_version_number)
      |> assign(:platform_options, RouteVersion.platform_select_options())
+     |> assign(:status_options, @status_options)
+     |> assign(:editing_version_id, nil)
+     |> assign(:edit_version_form, nil)
      |> assign(:version_form, to_form(changeset))
      |> stream(:route_versions, route_versions)}
   end
@@ -34,7 +43,7 @@ defmodule RoutesWeb.RouteLive.Show do
   @impl true
   def handle_event("create_version", %{"route_version" => params}, socket) do
     case Routing.create_route_version(socket.assigns.route, params) do
-      {:ok, route_version} ->
+      {:ok, _route_version} ->
         next_version_number = Routing.next_route_version_number(socket.assigns.route.id)
 
         {:noreply,
@@ -44,8 +53,8 @@ defmodule RoutesWeb.RouteLive.Show do
          |> assign(
            :version_form,
            to_form(Routing.change_route_version(%RouteVersion{version_number: next_version_number}))
-         )
-         |> stream_insert(:route_versions, route_version, at: 0)}
+          )
+         |> refresh_versions()}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :version_form, to_form(changeset))}
@@ -58,7 +67,55 @@ defmodule RoutesWeb.RouteLive.Show do
 
     if route_version.route_id == socket.assigns.route.id do
       {:ok, _deleted} = Routing.delete_route_version(route_version)
-      {:noreply, stream_delete(socket, :route_versions, route_version)}
+      {:noreply,
+       socket
+       |> maybe_cancel_edit_for(route_version.id)
+       |> refresh_versions()}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("edit_version", %{"id" => id}, socket) do
+    route_version = Routing.get_route_version!(id)
+
+    if route_version.route_id == socket.assigns.route.id do
+      {:noreply,
+       socket
+       |> assign(:editing_version_id, route_version.id)
+       |> assign(:edit_version_form, to_form(Routing.change_route_version(route_version)))
+       |> refresh_versions()}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_edit_version", _params, socket) do
+    {:noreply, cancel_edit(socket) |> refresh_versions()}
+  end
+
+  @impl true
+  def handle_event("update_version", %{"id" => id, "route_version" => params}, socket) do
+    route_version = Routing.get_route_version!(id)
+
+    if route_version.route_id == socket.assigns.route.id do
+      case Routing.update_route_version(route_version, params) do
+        {:ok, _updated} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Route version updated.")
+           |> assign(:next_version_number, Routing.next_route_version_number(socket.assigns.route.id))
+           |> cancel_edit()
+           |> refresh_versions()}
+
+        {:error, changeset} ->
+          {:noreply,
+           socket
+           |> assign(:edit_version_form, to_form(changeset))
+           |> refresh_versions()}
+      end
     else
       {:noreply, socket}
     end
@@ -134,9 +191,52 @@ defmodule RoutesWeb.RouteLive.Show do
                         {String.capitalize(route_version.status)}
                       </span>
                     </div>
-                    <p class="mt-2 text-sm text-slate-500">
-                      {route_version.notes || "No notes yet."}
-                    </p>
+                    <%= if @editing_version_id == route_version.id && @edit_version_form do %>
+                      <.form
+                        for={@edit_version_form}
+                        id={"route-version-edit-form-#{route_version.id}"}
+                        phx-submit="update_version"
+                        phx-value-id={route_version.id}
+                        class="mt-4 space-y-4"
+                      >
+                        <.input
+                          field={@edit_version_form[:status]}
+                          type="select"
+                          label="Status"
+                          options={@status_options}
+                          class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                          error_class="border-rose-300 ring-2 ring-rose-100"
+                        />
+                        <.input
+                          field={@edit_version_form[:notes]}
+                          type="textarea"
+                          label="Description"
+                          placeholder="What should riders know about this version?"
+                          rows="3"
+                          class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                          error_class="border-rose-300 ring-2 ring-rose-100"
+                        />
+                        <div class="flex flex-wrap gap-2">
+                          <button
+                            type="submit"
+                            class="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                          >
+                            Save changes
+                          </button>
+                          <button
+                            type="button"
+                            phx-click="cancel_edit_version"
+                            class="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </.form>
+                    <% else %>
+                      <p class="mt-2 text-sm text-slate-500">
+                        {route_version.notes || "No description yet."}
+                      </p>
+                    <% end %>
                     <p class="mt-3 text-xs uppercase tracking-[0.2em] text-slate-400">Reference</p>
                     <%= if route_version.reference_url do %>
                       <a
@@ -156,7 +256,21 @@ defmodule RoutesWeb.RouteLive.Show do
                       </p>
                     <% end %>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <%= if @editing_version_id == route_version.id do %>
+                      <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-500">
+                        Editing…
+                      </span>
+                    <% else %>
+                      <button
+                        type="button"
+                        phx-click="edit_version"
+                        phx-value-id={route_version.id}
+                        class="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+                      >
+                        Edit
+                      </button>
+                    <% end %>
                     <button
                       type="button"
                       id={"route-version-delete-#{route_version.id}"}
@@ -203,15 +317,15 @@ defmodule RoutesWeb.RouteLive.Show do
                 field={@version_form[:status]}
                 type="select"
                 label="Status"
-                options={[Draft: "draft", Published: "published", Archived: "archived"]}
+                options={@status_options}
                 class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 error_class="border-rose-300 ring-2 ring-rose-100"
               />
               <.input
                 field={@version_form[:notes]}
                 type="textarea"
-                label="Release notes"
-                placeholder="What changed in this version?"
+                label="Description"
+                placeholder="What should riders know about this version?"
                 rows="3"
                 class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 error_class="border-rose-300 ring-2 ring-rose-100"
@@ -263,5 +377,24 @@ defmodule RoutesWeb.RouteLive.Show do
       _ ->
         url
     end
+  end
+
+  defp cancel_edit(socket) do
+    socket
+    |> assign(:editing_version_id, nil)
+    |> assign(:edit_version_form, nil)
+  end
+
+  defp maybe_cancel_edit_for(socket, id) do
+    if socket.assigns.editing_version_id == id do
+      cancel_edit(socket)
+    else
+      socket
+    end
+  end
+
+  defp refresh_versions(socket) do
+    route_versions = Routing.list_route_versions(socket.assigns.route.id)
+    stream(socket, :route_versions, route_versions, reset: true)
   end
 end
