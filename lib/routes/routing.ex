@@ -60,7 +60,6 @@ defmodule Routes.Routing do
       attrs
       |> Map.new()
       |> Map.put("version_number", version_number)
-      |> Map.put(:version_number, version_number)
 
     route
     |> Ecto.build_assoc(:route_versions)
