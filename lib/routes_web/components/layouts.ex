@@ -35,40 +35,38 @@ defmodule RoutesWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
+    <div class="min-h-screen bg-slate-950 text-white">
+      <header class="border-b border-white/5 bg-slate-950/50 backdrop-blur">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
+          <div class="flex items-center gap-3">
+            <a href={~p"/"} class="flex items-center gap-2 rounded-full border border-white/5 px-4 py-2 text-sm font-semibold">
+              <img src={~p"/images/logo.svg"} width="32" height="32" alt="Routes logo" />
+              Routes
             </a>
-          </li>
-        </ul>
-      </div>
-    </header>
+            <span class="hidden text-xs uppercase tracking-[0.4em] text-white/50 sm:inline-flex">
+              v{Application.spec(:phoenix, :vsn)}
+            </span>
+          </div>
+          <nav class="flex items-center gap-6 text-sm font-medium">
+            <.link navigate={~p"/routes"} class="text-white/70 transition hover:text-white">Routes</.link>
+            <.link navigate={~p"/routes/new"} class="text-white/70 transition hover:text-white">Add Route</.link>
+            <.theme_toggle />
+          </nav>
+        </div>
+      </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-5xl space-y-4">
-        {render_slot(@inner_block)}
-      </div>
-    </main>
+      <main class="px-4 py-16 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-6xl">
+          {render_slot(@inner_block)}
+        </div>
+      </main>
+    </div>
 
-    <.flash_group flash={@flash} />
+    <div class="pointer-events-none fixed inset-x-0 bottom-0 flex justify-center px-4 pb-6 sm:px-6 lg:px-8">
+      <div class="pointer-events-auto w-full max-w-3xl">
+        <.flash_group flash={@flash} />
+      </div>
+    </div>
     """
   end
 
