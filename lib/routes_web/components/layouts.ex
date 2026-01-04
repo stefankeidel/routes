@@ -39,17 +39,23 @@ defmodule RoutesWeb.Layouts do
       <header class="border-b border-white/5 bg-slate-950/50 backdrop-blur">
         <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
           <div class="flex items-center gap-3">
-            <a href={~p"/"} class="flex items-center gap-2 rounded-full border border-white/5 px-4 py-2 text-sm font-semibold">
-              <img src={~p"/images/logo.svg"} width="32" height="32" alt="Routes logo" />
-              Routes
+            <a
+              href={~p"/"}
+              class="flex items-center gap-2 rounded-full border border-white/5 px-4 py-2 text-sm font-semibold"
+            >
+              <img src={~p"/images/logo.svg"} width="32" height="32" alt="Routes logo" /> Routes
             </a>
             <span class="hidden text-xs uppercase tracking-[0.4em] text-white/50 sm:inline-flex">
               v{Application.spec(:phoenix, :vsn)}
             </span>
           </div>
           <nav class="flex items-center gap-6 text-sm font-medium">
-            <.link navigate={~p"/routes"} class="text-white/70 transition hover:text-white">Routes</.link>
-            <.link navigate={~p"/routes/new"} class="text-white/70 transition hover:text-white">Add Route</.link>
+            <.link navigate={~p"/routes"} class="text-white/70 transition hover:text-white">
+              Routes
+            </.link>
+            <.link navigate={~p"/routes/new"} class="text-white/70 transition hover:text-white">
+              Add Route
+            </.link>
             <.theme_toggle />
           </nav>
         </div>

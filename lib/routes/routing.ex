@@ -40,9 +40,28 @@ defmodule Routes.Routing do
     )
   end
 
+  def next_route_version_number(route_id) do
+    latest_version =
+      Repo.one(
+        from route_version in RouteVersion,
+          where: route_version.route_id == ^route_id,
+          select: max(route_version.version_number)
+      )
+
+    (latest_version || 0) + 1
+  end
+
   def get_route_version!(id), do: Repo.get!(RouteVersion, id)
 
   def create_route_version(route, attrs) do
+    version_number = next_route_version_number(route.id)
+
+    attrs =
+      attrs
+      |> Map.new()
+      |> Map.put("version_number", version_number)
+      |> Map.put(:version_number, version_number)
+
     route
     |> Ecto.build_assoc(:route_versions)
     |> RouteVersion.changeset(attrs)

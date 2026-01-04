@@ -8,12 +8,15 @@ defmodule RoutesWeb.RouteLive.Show do
   def mount(%{"id" => id}, _session, socket) do
     route = Routing.get_route!(id)
     route_versions = Routing.list_route_versions(route.id)
-    changeset = Routing.change_route_version(%RouteVersion{})
+    next_version_number = Routing.next_route_version_number(route.id)
+    changeset = Routing.change_route_version(%RouteVersion{version_number: next_version_number})
 
     {:ok,
      socket
      |> assign(:current_scope, nil)
      |> assign(:route, route)
+     |> assign(:next_version_number, next_version_number)
+     |> assign(:platform_options, RouteVersion.platform_select_options())
      |> assign(:version_form, to_form(changeset))
      |> stream(:route_versions, route_versions)}
   end
@@ -21,7 +24,7 @@ defmodule RoutesWeb.RouteLive.Show do
   @impl true
   def handle_event("validate_version", %{"route_version" => params}, socket) do
     changeset =
-      %RouteVersion{}
+      %RouteVersion{version_number: socket.assigns.next_version_number}
       |> Routing.change_route_version(params)
       |> Map.put(:action, :validate)
 
@@ -32,10 +35,16 @@ defmodule RoutesWeb.RouteLive.Show do
   def handle_event("create_version", %{"route_version" => params}, socket) do
     case Routing.create_route_version(socket.assigns.route, params) do
       {:ok, route_version} ->
+        next_version_number = Routing.next_route_version_number(socket.assigns.route.id)
+
         {:noreply,
          socket
          |> put_flash(:info, "Route version added.")
-         |> assign(:version_form, to_form(Routing.change_route_version(%RouteVersion{})))
+         |> assign(:next_version_number, next_version_number)
+         |> assign(
+           :version_form,
+           to_form(Routing.change_route_version(%RouteVersion{version_number: next_version_number}))
+         )
          |> stream_insert(:route_versions, route_version, at: 0)}
 
       {:error, changeset} ->
@@ -128,10 +137,24 @@ defmodule RoutesWeb.RouteLive.Show do
                     <p class="mt-2 text-sm text-slate-500">
                       {route_version.notes || "No notes yet."}
                     </p>
-                    <p class="mt-3 text-xs uppercase tracking-[0.2em] text-slate-400">Definition</p>
-                    <p class="mt-1 text-sm text-slate-600">
-                      {route_version.definition || "No definition captured."}
-                    </p>
+                    <p class="mt-3 text-xs uppercase tracking-[0.2em] text-slate-400">Reference</p>
+                    <%= if route_version.reference_url do %>
+                      <a
+                        href={route_version.reference_url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        class="mt-1 inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                      >
+                        <span class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+                          {RouteVersion.platform_label(route_version.reference_platform)}
+                        </span>
+                        <span class="text-sm">{reference_host(route_version.reference_url)}</span>
+                      </a>
+                    <% else %>
+                      <p class="mt-1 text-sm text-slate-600">
+                        No reference captured.
+                      </p>
+                    <% end %>
                   </div>
                   <div class="flex items-center gap-2">
                     <button
@@ -159,7 +182,13 @@ defmodule RoutesWeb.RouteLive.Show do
                 Add a version
               </h2>
               <p class="mt-2 text-sm text-slate-500">
-                Track updates with a version number, status, and definition.
+                Track updates with a version number, status, and verified route reference.
+              </p>
+            </div>
+            <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Next version</p>
+              <p class="text-lg font-semibold text-slate-900">
+                v{@next_version_number}
               </p>
             </div>
 
@@ -170,15 +199,6 @@ defmodule RoutesWeb.RouteLive.Show do
               phx-submit="create_version"
               class="mt-6 space-y-5"
             >
-              <.input
-                field={@version_form[:version_number]}
-                type="number"
-                label="Version number"
-                placeholder="1"
-                class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                error_class="border-rose-300 ring-2 ring-rose-100"
-                min="1"
-              />
               <.input
                 field={@version_form[:status]}
                 type="select"
@@ -197,11 +217,18 @@ defmodule RoutesWeb.RouteLive.Show do
                 error_class="border-rose-300 ring-2 ring-rose-100"
               />
               <.input
-                field={@version_form[:definition]}
-                type="textarea"
-                label="Definition"
-                placeholder="Summarize the route definition or core rules."
-                rows="4"
+                field={@version_form[:reference_platform]}
+                type="select"
+                label="Platform"
+                options={@platform_options}
+                class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                error_class="border-rose-300 ring-2 ring-rose-100"
+              />
+              <.input
+                field={@version_form[:reference_url]}
+                type="url"
+                label="Route URL"
+                placeholder="https://bikerouter.de/..."
                 class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 error_class="border-rose-300 ring-2 ring-rose-100"
               />
@@ -225,4 +252,16 @@ defmodule RoutesWeb.RouteLive.Show do
   defp status_badge_class("published"), do: "bg-emerald-100 text-emerald-700"
   defp status_badge_class("archived"), do: "bg-amber-100 text-amber-700"
   defp status_badge_class(_status), do: "bg-slate-200 text-slate-700"
+
+  defp reference_host(nil), do: ""
+
+  defp reference_host(url) do
+    case URI.parse(url) do
+      %URI{host: host} when is_binary(host) ->
+        host
+
+      _ ->
+        url
+    end
+  end
 end
