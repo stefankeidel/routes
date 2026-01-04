@@ -7,6 +7,7 @@ defmodule Routes.Routing.Route do
   schema "routes" do
     field :name, :string
     field :description, :string
+    field :latest_version, :map, virtual: true
 
     has_many :route_versions, Routes.Routing.RouteVersion
 

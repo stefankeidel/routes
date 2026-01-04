@@ -12,6 +12,24 @@ defmodule Routes.Routing do
     Repo.all(from route in Route, order_by: [asc: route.name])
   end
 
+  def list_routes_with_latest_versions do
+    routes = list_routes()
+
+    route_ids = Enum.map(routes, & &1.id)
+
+    latest_versions =
+      RouteVersion
+      |> where([rv], rv.status == "published" and rv.route_id in ^route_ids)
+      |> order_by([rv], desc: rv.version_number)
+      |> distinct([rv], rv.route_id)
+      |> Repo.all()
+      |> Map.new(&{&1.route_id, &1})
+
+    Enum.map(routes, fn route ->
+      Map.put(route, :latest_version, Map.get(latest_versions, route.id))
+    end)
+  end
+
   def get_route!(id), do: Repo.get!(Route, id)
 
   def create_route(attrs) do

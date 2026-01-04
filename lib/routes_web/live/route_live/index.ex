@@ -2,10 +2,11 @@ defmodule RoutesWeb.RouteLive.Index do
   use RoutesWeb, :live_view
 
   alias Routes.Routing
+  alias Routes.Routing.RouteVersion
 
   @impl true
   def mount(_params, _session, socket) do
-    routes = Routing.list_routes()
+    routes = Routing.list_routes_with_latest_versions()
 
     {:ok,
      socket
@@ -54,7 +55,10 @@ defmodule RoutesWeb.RouteLive.Index do
           phx-update="stream"
           class="grid gap-4 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm"
         >
-          <div class="hidden rounded-2xl border border-dashed border-slate-200 px-6 py-12 text-center text-sm text-slate-500 only:block">
+          <div
+            id="routes-empty"
+            class="hidden rounded-2xl border border-dashed border-slate-200 px-6 py-12 text-center text-sm text-slate-500 only:block"
+          >
             No routes yet. Create your first route to start versioning.
           </div>
           <div
@@ -68,6 +72,26 @@ defmodule RoutesWeb.RouteLive.Index do
                 <p class="mt-1 text-sm text-slate-500">
                   {route.description || "No description yet. Add a note about how this route works."}
                 </p>
+                <%= if latest = route.latest_version do %>
+                  <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      Latest v{latest.version_number}
+                    </span>
+                    <a
+                      href={latest.reference_url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      class="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 underline decoration-dotted decoration-slate-400 underline-offset-4 hover:text-slate-900"
+                    >
+                      View on {RouteVersion.platform_label(latest.reference_platform)}
+                      <.icon name="hero-arrow-up-right-mini" class="size-3" />
+                    </a>
+                  </div>
+                <% else %>
+                  <p class="mt-3 text-xs uppercase tracking-[0.3em] text-slate-300">
+                    No published version
+                  </p>
+                <% end %>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <.link
