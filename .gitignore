@@ -35,3 +35,5 @@ routes-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# uploads
+priv/static/uploads/

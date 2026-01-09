@@ -71,7 +71,7 @@ defmodule Routes.Routing do
 
   def get_route_version!(id), do: Repo.get!(RouteVersion, id)
 
-  def create_route_version(route, attrs) do
+  def create_route_version(route, attrs, upload \\ nil) do
     version_number = next_route_version_number(route.id)
 
     attrs =
@@ -82,12 +82,14 @@ defmodule Routes.Routing do
     route
     |> Ecto.build_assoc(:route_versions)
     |> RouteVersion.changeset(attrs)
+    |> maybe_put_upload(upload)
     |> Repo.insert()
   end
 
-  def update_route_version(route_version, attrs) do
+  def update_route_version(route_version, attrs, upload \\ nil) do
     route_version
     |> RouteVersion.changeset(attrs)
+    |> maybe_put_upload(upload)
     |> Repo.update()
   end
 
@@ -95,5 +97,11 @@ defmodule Routes.Routing do
 
   def change_route_version(route_version, attrs \\ %{}) do
     RouteVersion.changeset(route_version, attrs)
+  end
+
+  defp maybe_put_upload(changeset, nil), do: changeset
+
+  defp maybe_put_upload(changeset, upload) do
+    RouteVersion.put_file_upload(changeset, upload)
   end
 end

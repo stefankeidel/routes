@@ -20,6 +20,9 @@ defmodule Routes.Routing.RouteVersion do
     field :notes, :string
     field :reference_platform, :string
     field :reference_url, :string
+    field :file_path, :string
+    field :file_name, :string
+    field :file_type, :string
 
     belongs_to :route, Routes.Routing.Route
 
@@ -29,17 +32,31 @@ defmodule Routes.Routing.RouteVersion do
   def changeset(route_version, attrs) do
     route_version
     |> cast(attrs, [:version_number, :status, :notes, :reference_platform, :reference_url])
-    |> validate_required([:version_number, :status, :reference_platform, :reference_url])
+    |> validate_required([:version_number, :status])
     |> validate_number(:version_number, greater_than: 0)
     |> validate_inclusion(:status, ["draft", "published", "archived"])
     |> validate_length(:notes, max: 600)
-    |> validate_inclusion(:reference_platform, platform_values())
+    |> validate_reference_platform()
     |> validate_length(:reference_url, max: 2000)
     |> validate_reference_url()
     |> unique_constraint(:version_number,
       name: :route_versions_route_id_version_number_index
     )
   end
+
+  def put_file_upload(changeset, %{
+        file_path: file_path,
+        file_name: file_name,
+        file_type: file_type
+      }) do
+    changeset
+    |> put_change(:file_path, file_path)
+    |> put_change(:file_name, file_name)
+    |> put_change(:file_type, file_type)
+    |> validate_inclusion(:file_type, allowed_file_types())
+  end
+
+  defp allowed_file_types, do: ~w(gpx)
 
   def platform_select_options do
     Enum.map(@platforms, &{&1.label, &1.value})
@@ -62,6 +79,16 @@ defmodule Routes.Routing.RouteVersion do
     validate_change(changeset, :reference_url, fn :reference_url, url ->
       do_validate_reference_url(platform, url)
     end)
+  end
+
+  defp validate_reference_platform(changeset) do
+    reference_url = get_field(changeset, :reference_url)
+
+    if reference_url in [nil, ""] do
+      changeset
+    else
+      validate_inclusion(changeset, :reference_platform, platform_values())
+    end
   end
 
   defp do_validate_reference_url(_platform, url) when url in [nil, ""], do: []

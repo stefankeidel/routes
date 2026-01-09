@@ -63,6 +63,5 @@ defmodule RoutesWeb.RouteLiveTest do
       assert html =~ "Published"
       assert html =~ "Ready to share"
     end
-
   end
 end

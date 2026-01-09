@@ -11,6 +11,10 @@ config :routes,
   ecto_repos: [Routes.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+config :mime, :types, %{
+  "application/gpx+xml" => ["gpx"]
+}
+
 # Configure the endpoint
 config :routes, RoutesWeb.Endpoint,
   url: [host: "localhost"],

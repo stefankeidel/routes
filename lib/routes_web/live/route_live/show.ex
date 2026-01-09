@@ -27,6 +27,16 @@ defmodule RoutesWeb.RouteLive.Show do
      |> assign(:editing_version_id, nil)
      |> assign(:edit_version_form, nil)
      |> assign(:version_form, to_form(changeset))
+     |> allow_upload(:route_file_new,
+       accept: ~w(.gpx),
+       max_entries: 1,
+       max_file_size: 10_000_000
+     )
+     |> allow_upload(:route_file_edit,
+       accept: ~w(.gpx),
+       max_entries: 1,
+       max_file_size: 10_000_000
+     )
      |> stream(:route_versions, route_versions)}
   end
 
@@ -42,7 +52,9 @@ defmodule RoutesWeb.RouteLive.Show do
 
   @impl true
   def handle_event("create_version", %{"route_version" => params}, socket) do
-    case Routing.create_route_version(socket.assigns.route, params) do
+    upload = consume_route_file(socket, :route_file_new) |> List.first()
+
+    case Routing.create_route_version(socket.assigns.route, params, upload) do
       {:ok, _route_version} ->
         next_version_number = Routing.next_route_version_number(socket.assigns.route.id)
 
@@ -52,8 +64,10 @@ defmodule RoutesWeb.RouteLive.Show do
          |> assign(:next_version_number, next_version_number)
          |> assign(
            :version_form,
-           to_form(Routing.change_route_version(%RouteVersion{version_number: next_version_number}))
-          )
+           to_form(
+             Routing.change_route_version(%RouteVersion{version_number: next_version_number})
+           )
+         )
          |> refresh_versions()}
 
       {:error, changeset} ->
@@ -67,6 +81,7 @@ defmodule RoutesWeb.RouteLive.Show do
 
     if route_version.route_id == socket.assigns.route.id do
       {:ok, _deleted} = Routing.delete_route_version(route_version)
+
       {:noreply,
        socket
        |> maybe_cancel_edit_for(route_version.id)
@@ -101,12 +116,17 @@ defmodule RoutesWeb.RouteLive.Show do
     route_version = Routing.get_route_version!(id)
 
     if route_version.route_id == socket.assigns.route.id do
-      case Routing.update_route_version(route_version, params) do
+      upload = consume_route_file(socket, :route_file_edit) |> List.first()
+
+      case Routing.update_route_version(route_version, params, upload) do
         {:ok, _updated} ->
           {:noreply,
            socket
            |> put_flash(:info, "Route version updated.")
-           |> assign(:next_version_number, Routing.next_route_version_number(socket.assigns.route.id))
+           |> assign(
+             :next_version_number,
+             Routing.next_route_version_number(socket.assigns.route.id)
+           )
            |> cancel_edit()
            |> refresh_versions()}
 
@@ -221,6 +241,29 @@ defmodule RoutesWeb.RouteLive.Show do
                           class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
                           error_class="border-rose-300 ring-2 ring-rose-100"
                         />
+                        <div class="space-y-2">
+                          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            Replace GPX file
+                          </label>
+                          <div class="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-4 text-sm text-slate-500">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                              <span>
+                                {route_version.file_name || "Upload a GPX track for this version."}
+                              </span>
+                              <span class="text-xs uppercase tracking-[0.2em] text-slate-400">
+                                .gpx only
+                              </span>
+                            </div>
+                            <.live_file_input
+                              upload={@uploads.route_file_edit}
+                              id={"route-version-file-#{route_version.id}"}
+                              class="mt-3 block w-full text-xs text-slate-500 file:mr-4 file:rounded-full file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-800"
+                            />
+                          </div>
+                          <%= for err <- upload_errors(@uploads.route_file_edit) do %>
+                            <p class="text-xs text-rose-600">{err}</p>
+                          <% end %>
+                        </div>
                         <div class="flex flex-wrap gap-2">
                           <button
                             type="submit"
@@ -259,6 +302,20 @@ defmodule RoutesWeb.RouteLive.Show do
                       <p class="mt-1 text-sm text-slate-600">
                         No reference captured.
                       </p>
+                    <% end %>
+                    <%= if route_version.file_path do %>
+                      <p class="mt-4 text-xs uppercase tracking-[0.2em] text-slate-400">
+                        GPX file
+                      </p>
+                      <a
+                        href={file_url(route_version.file_path)}
+                        class="mt-2 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                      >
+                        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                          {String.upcase(route_version.file_type)}
+                        </span>
+                        <span class="text-sm">{route_version.file_name}</span>
+                      </a>
                     <% end %>
                   </div>
                   <div class="flex flex-wrap items-center gap-2">
@@ -351,6 +408,25 @@ defmodule RoutesWeb.RouteLive.Show do
                 class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 error_class="border-rose-300 ring-2 ring-rose-100"
               />
+              <div class="space-y-2">
+                <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  Upload GPX
+                </label>
+                <div class="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-4 text-sm text-slate-500">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <span>Store a GPX track along with this version.</span>
+                    <span class="text-xs uppercase tracking-[0.2em] text-slate-400">.gpx only</span>
+                  </div>
+                  <.live_file_input
+                    upload={@uploads.route_file_new}
+                    id="route-version-file"
+                    class="mt-3 block w-full text-xs text-slate-500 file:mr-4 file:rounded-full file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-800"
+                  />
+                </div>
+                <%= for err <- upload_errors(@uploads.route_file_new) do %>
+                  <p class="text-xs text-rose-600">{err}</p>
+                <% end %>
+              </div>
 
               <button
                 type="submit"
@@ -401,5 +477,32 @@ defmodule RoutesWeb.RouteLive.Show do
   defp refresh_versions(socket) do
     route_versions = Routing.list_route_versions(socket.assigns.route.id)
     stream(socket, :route_versions, route_versions, reset: true)
+  end
+
+  defp consume_route_file(socket, upload_name) do
+    consume_uploaded_entries(socket, upload_name, fn %{path: path}, entry ->
+      uploads_dir = Path.join([:code.priv_dir(:routes), "static", "uploads"])
+      File.mkdir_p!(uploads_dir)
+
+      ext = Path.extname(entry.client_name)
+      storage_name = "#{entry.uuid}#{ext}"
+      dest = Path.join(uploads_dir, storage_name)
+
+      File.cp!(path, dest)
+
+      {:ok,
+       %{
+         file_path: Path.join("uploads", storage_name),
+         file_name: entry.client_name,
+         file_type: normalize_file_type(ext)
+       }}
+    end)
+  end
+
+  defp normalize_file_type("." <> ext), do: String.downcase(ext)
+  defp normalize_file_type(ext), do: String.downcase(ext)
+
+  defp file_url(path) do
+    RoutesWeb.Endpoint.static_path("/" <> path)
   end
 end
