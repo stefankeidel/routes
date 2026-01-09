@@ -77,15 +77,27 @@ defmodule RoutesWeb.RouteLive.Index do
                     <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                       Latest v{latest.version_number}
                     </span>
-                    <a
-                      href={latest.reference_url}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      class="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 underline decoration-dotted decoration-slate-400 underline-offset-4 hover:text-slate-900"
-                    >
-                      View on {RouteVersion.platform_label(latest.reference_platform)}
-                      <.icon name="hero-arrow-up-right-mini" class="size-3" />
-                    </a>
+                    <%= if latest.reference_url do %>
+                      <a
+                        href={latest.reference_url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        class="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 underline decoration-dotted decoration-slate-400 underline-offset-4 hover:text-slate-900"
+                      >
+                        View on {RouteVersion.platform_label(latest.reference_platform)}
+                        <.icon name="hero-arrow-up-right-mini" class="size-3" />
+                      </a>
+                    <% end %>
+                    <%= if latest.file_path do %>
+                      <a
+                        id={"route-gpx-#{route.id}"}
+                        href={file_url(latest.file_path)}
+                        download={latest.file_name}
+                        class="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 underline decoration-dotted decoration-slate-400 underline-offset-4 hover:text-slate-900"
+                      >
+                        Download GPX <.icon name="hero-arrow-down-tray-mini" class="size-3" />
+                      </a>
+                    <% end %>
                   </div>
                 <% else %>
                   <p class="mt-3 text-xs uppercase tracking-[0.3em] text-slate-300">
@@ -125,5 +137,9 @@ defmodule RoutesWeb.RouteLive.Index do
       </section>
     </Layouts.app>
     """
+  end
+
+  defp file_url(path) do
+    RoutesWeb.Endpoint.static_path("/" <> path)
   end
 end
